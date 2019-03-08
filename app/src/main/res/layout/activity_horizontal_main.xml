@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:visibility="visible"
+    tools:layout_editor_absoluteY="81dp">
+
+    <ImageView
+        android:id="@+id/default_iv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_margin="50dp"
+        android:background="@android:color/white"
+        android:rotation="180"
+        android:scaleType="centerInside"
+        android:src="@drawable/df_logo_m" />
+
+
+    <com.tompee.circularviewpager.CircularViewPager
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <com.displayfort.dfortusbtouch.widgets.CustomViewOfViewPager
+        android:id="@+id/custom_viewpager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:swipe_orientation="vertical" />
+
+</RelativeLayout>
