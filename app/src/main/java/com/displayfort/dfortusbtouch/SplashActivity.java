@@ -14,9 +14,6 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
-import com.netcompss.ffmpeg4android.GeneralUtils;
-import com.netcompss.ffmpeg4android.Prefs;
-
 import java.util.ArrayList;
 
 public class SplashActivity extends AppCompatActivity {
@@ -28,7 +25,7 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         context = this;
         setContentView(R.layout.activity_main);
-        SetSupportFiles();
+//        SetSupportFiles();
         PermisionRequest();
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -119,23 +116,23 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-    private void SetSupportFiles() {
-        String workFolder = null;
-        String demoVideoFolder = null;
-        String demoVideoPath = null;
-        String vkLogPath = null;
-
-        demoVideoFolder = Environment.getExternalStorageDirectory().getAbsolutePath() + Prefs.FOLDER;
-        demoVideoPath = demoVideoFolder + "in.mp4";
-
-        Log.i(Prefs.TAG, getString(R.string.app_name) + " version: " + GeneralUtils.getVersionName(getApplicationContext()));
-        workFolder = getApplicationContext().getFilesDir().getAbsolutePath() + "/";
-        Log.i(Prefs.TAG, "workFolder: " + workFolder);
-        vkLogPath = workFolder + "vk.log";
-        GeneralUtils.copyFileToFolder(vkLogPath, demoVideoFolder);
-        GeneralUtils.copyLicenseFromAssetsToSDIfNeeded(this, workFolder);
-        GeneralUtils.copyDemoVideoFromAssetsToSDIfNeeded(this, demoVideoFolder);
-        GeneralUtils.checkForPermissionsMAndAbove(this, false);
-
-    }
+//    private void SetSupportFiles() {
+//        String workFolder = null;
+//        String demoVideoFolder = null;
+//        String demoVideoPath = null;
+//        String vkLogPath = null;
+//
+//        demoVideoFolder = Environment.getExternalStorageDirectory().getAbsolutePath() + Prefs.FOLDER;
+//        demoVideoPath = demoVideoFolder + "in.mp4";
+//
+//        Log.i(Prefs.TAG, getString(R.string.app_name) + " version: " + GeneralUtils.getVersionName(getApplicationContext()));
+//        workFolder = getApplicationContext().getFilesDir().getAbsolutePath() + "/";
+//        Log.i(Prefs.TAG, "workFolder: " + workFolder);
+//        vkLogPath = workFolder + "vk.log";
+//        GeneralUtils.copyFileToFolder(vkLogPath, demoVideoFolder);
+//        GeneralUtils.copyLicenseFromAssetsToSDIfNeeded(this, workFolder);
+//        GeneralUtils.copyDemoVideoFromAssetsToSDIfNeeded(this, demoVideoFolder);
+//        GeneralUtils.checkForPermissionsMAndAbove(this, false);
+//
+//    }
 }

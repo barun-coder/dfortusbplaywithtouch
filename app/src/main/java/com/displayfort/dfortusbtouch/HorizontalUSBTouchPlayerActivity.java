@@ -1,12 +1,12 @@
 package com.displayfort.dfortusbtouch;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
@@ -18,7 +18,8 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.ActivityCompat;
+import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -27,17 +28,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.displayfort.dfortusbtouch.Constant.Constants;
 import com.displayfort.dfortusbtouch.widgets.CustomGestureListener;
 import com.displayfort.dfortusbtouch.widgets.SwippeableRelativeLayout;
-import com.tompee.circularviewpager.CircularViewPager;
 import com.universalvideoview.UniversalVideoView;
 
 import java.io.File;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 
 
 /**
@@ -46,7 +48,7 @@ import java.util.Arrays;
  */
 public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     private String TAG = "USBCatch";
-    private File[] completFileList;
+    private ArrayList<File> completFileList;
     private int Orientation = ExifInterface.ORIENTATION_UNDEFINED;
     private CountDownTimer countDownTimer;
     private int count = 1;
@@ -62,13 +64,22 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     private View bckview;
     private long timeRemaining;
 
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_horizontal_player);
         RegisterUpdateReceiver();
         init();
+        setConstant();
         SHowMNT();
+    }
+
+    private void setConstant() {
+        gestures_rl.setVisibility((Constants.isTouchEnable) ? View.VISIBLE : View.GONE);
+//        VideoView NewVideo = findViewById(R.id.new_videoView);
+//        NewVideo.setVideoURI(Uri.parse(" /storage/emulated/0/adsTouch/Mykonos_5.mov"));
+//        NewVideo.start();
     }
 
     private void init() {
@@ -90,14 +101,16 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
             public boolean onSwipeRight() {
                 if (!gestures_rl.isSelected()) {
                     countDownTimer.cancel();
-                    Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "right", Toast.LENGTH_SHORT).show();
-                    if (currentAdvertisementNo > 0) {
+                    //   Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "right", Toast.LENGTH_SHORT).show();
+                    if (currentAdvertisementNo == 0) {
+                        currentAdvertisementNo = (completFileList.size() - 2);
+                    } else if (currentAdvertisementNo > 0) {
                         currentAdvertisementNo = currentAdvertisementNo - 2;
                         if (currentAdvertisementNo == -1) {
-                            currentAdvertisementNo = (completFileList.length - 1);
+                            currentAdvertisementNo = (completFileList.size() - 1);
                         }
                     } else {
-                        currentAdvertisementNo = (completFileList.length - 1);
+                        currentAdvertisementNo = (completFileList.size() - 1);
                     }
                     showCurrentAd();
                 }
@@ -108,7 +121,7 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
             public boolean onSwipeLeft() {
                 if (!gestures_rl.isSelected()) {
                     countDownTimer.cancel();
-                    Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "left", Toast.LENGTH_SHORT).show();
+                    //  Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "left", Toast.LENGTH_SHORT).show();
                     showCurrentAd();
                 }
                 return false;
@@ -116,7 +129,7 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 
             @Override
             public boolean onTouch() {
-                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "ON", Toast.LENGTH_SHORT).show();
+                //  Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "ON", Toast.LENGTH_SHORT).show();
                 showLog("\nONFLINGS", "before Vlue gestures_rl " + gestures_rl.isSelected());
                 if (gestures_rl.isSelected()) {
                     bckview.setBackgroundColor(Color.TRANSPARENT);
@@ -155,6 +168,16 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
                         videoView.pause();
                         showLog("ONFLINGS", "Video status Playing " + videoView.isPlaying());
                     }
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (gestures_rl.isSelected()) {
+                                onTouch();
+                            }
+
+                        }
+                    }, 5000);
+
                 }
                 gestures_rl.setSelected(!gestures_rl.isSelected());
                 showLog("ONFLINGS", "final Vlue gestures_rl " + gestures_rl.isSelected());
@@ -176,6 +199,9 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 
     ///data/user/0/displayfort.nirmit.com.myapplication/files
     private void SHowMNT() {
+        mDefaultIV.setVisibility(View.VISIBLE);
+        mUvVideoRl.setVisibility(View.INVISIBLE);
+        displayImageView.setVisibility(View.INVISIBLE);
         showLog("FILEPATH", "\n\n");
         File[] fileList;
         File file = new File("mnt");
@@ -187,7 +213,7 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
             }
             showLog("FILEPATH", "MNT over \n");
             File file1 = new File(getApplicationContext().getFilesDir().getPath());
-            if (!isNotMobile()) {
+            if (!isNotMobile() && isIMEIAvailable()) {
                 if (Orientation == ExifInterface.ORIENTATION_UNDEFINED) {
                     file1 = new File(Environment.getExternalStorageDirectory() + File.separator + "adsTouch");
                 } else {
@@ -221,6 +247,16 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
                                 }
                             }
                         }
+                    } else {
+                        file1 = new File(file.getAbsoluteFile() + File.separator + "sdcard");
+                        fileList = file1.listFiles();
+                        if (fileList != null && fileList.length > 0) {
+//                            for (int i = 0; i < fileList.length; i++) {
+                            startFIlePlay(file1);
+                            return;
+                            //                            }
+
+                        }
                     }
                 }
             }
@@ -231,16 +267,33 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     ///storage/emulated/0/ads
     private void startFIlePlay(final File file) {
         count = 1;
-        filterName(file);
-        completFileList = file.listFiles();
-        if (completFileList != null && completFileList.length > 0) {
-            Arrays.sort(completFileList);
-            for (int i = 0; i < completFileList.length; i++) {
-                showLog("FILEPATH", completFileList[i] + "");
+        RemoveWhiteSpace(file);
+        completFileList = FilterFiles(file.listFiles());
+        if (completFileList != null && completFileList.size() > 0) {
+            mDefaultIV.setVisibility(View.GONE);
+            try {
+                Collections.sort(completFileList);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            for (int i = 0; i < completFileList.size(); i++) {
+                showLog("FILEPATH", completFileList.get(i) + "");
             }
             currentAdvertisementNo = 0;
             showCurrentAdvertisements();
         }
+    }
+
+    private ArrayList<File> FilterFiles(File[] completFileList) {
+        ArrayList<File> newFileList = new ArrayList<>();
+        int j = 0;
+        for (int i = 0; i < completFileList.length; i++) {
+            String type = URLConnection.guessContentTypeFromName(completFileList[i].getName());
+            if (type != null && (type.toLowerCase().contains("gif") || type.toLowerCase().contains("image") || type.toLowerCase().contains("video"))) {
+                newFileList.add(completFileList[i]);
+            }
+        }
+        return newFileList;
     }
 
     private void showCurrentAdvertisements() {
@@ -250,84 +303,100 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 
     private void showCurrentAd() {
         int interval = -1;
-        try {
-            Log.d("handleMessage", "currentAdvertisementNo  :  " + currentAdvertisementNo);
-            setTheme(R.style.AppTheme);
-            final File file = completFileList[currentAdvertisementNo];
-            currentFile = file;
-            if (videoView != null && videoView.isPlaying()) {
-                showLog(TAG, "Onstop Video ");
-                videoView.stopPlayback();
-            }
-            showLog("FILEPATH", "Run File " + file.getAbsolutePath() + "\n");
-            String type = URLConnection.guessContentTypeFromName(file.getName());
-            if (type != null) {
-                if (type.toLowerCase().contains("gif")) {
-                    mUvVideoRl.setVisibility(View.INVISIBLE);
-                    displayImageView.setVisibility(View.VISIBLE);
-                    String photoPath = file.getAbsolutePath();
-                    Glide.with(this).load(BitmapFactory.decodeFile(photoPath)).into(displayImageView);
-                    Log.d("ADVERTISEMENT", photoPath.toString() + "");
-                    interval = 5000;
-                } else if (type.toLowerCase().contains("image")) {
-                    mUvVideoRl.setVisibility(View.INVISIBLE);
-                    displayImageView.setVisibility(View.VISIBLE);
-                    //displayImageView
-                    String photoPath = file.getAbsolutePath();
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inSampleSize = 8;
-                    final Bitmap b = BitmapFactory.decodeFile(photoPath);// BitmapFactory.decodeFile(photoPath, options);
-                    displayImageView.setImageBitmap(b);
-                    Log.d("ADVERTISEMENT", photoPath.toString() + "");
-                    interval = 5000;
-                } else if (type.toLowerCase().contains("video")) {
-                    mUvVideoRl.setVisibility(View.VISIBLE);
-                    displayImageView.setVisibility(View.INVISIBLE);
-                    File newfile = file;
-                    boolean isFileFound = newfile.exists();
-                    if (!isFileFound) {
-                        Log.d(" VIDEPATH", "isFileFound" + isFileFound);
-                        interval = -1; // 1 Second
-                    } else {
-                        Log.d("VIDEPATH", "isFileFound" + isFileFound);
-                        String photoPath = newfile.getAbsolutePath();
-                        interval = getMiliseconds(newfile);
-                        if (interval != 0) {
-                            Log.i("PostActivity", "Video List is " + getFilesDir().getPath());
-                            try {
-                                videoView.setVideoURI(Uri.parse(photoPath));
-                                videoView.start();
-                                videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                                    @Override
-                                    public void onCompletion(MediaPlayer mp) {
-                                        Log.d("VIDEPATH", "onCompletion");
-                                    }
-                                });
-                                videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                                    @Override
-                                    public boolean onError(MediaPlayer mp, int what, int extra) {
-                                        Log.d("VIDEPATH", "onError");
-                                        return false;
-                                    }
-                                });
-                            } catch (Exception e) {
-                                e.printStackTrace();
+        Log.d("handleMessage", "currentAdvertisementNo  :  " + currentAdvertisementNo);
+        setTheme(R.style.AppTheme);
+        if (completFileList == null && completFileList.size() <= 0) {
+            SHowMNT();
+            return;
+        }
+        final File file = completFileList.get(currentAdvertisementNo);
+        if (file.exists()) {
+            try {
+                currentFile = file;
+                if (videoView != null && videoView.isPlaying()) {
+                    showLog(TAG, "Onstop Video ");
+                    videoView.stopPlayback();
+                }
+                showLog("FILEPATH", "Run File " + file.getAbsolutePath() + "\n");
+                String type = URLConnection.guessContentTypeFromName(file.getName());
+                if (type != null) {
+                    if (type.toLowerCase().contains("gif")) {
+                        mUvVideoRl.setVisibility(View.INVISIBLE);
+                        displayImageView.setVisibility(View.VISIBLE);
+                        String photoPath = file.getAbsolutePath();
+                        Glide.with(this).load(photoPath).into(displayImageView);
+                        Log.d("ADVERTISEMENT", photoPath.toString() + "");
+                        interval = 5000;
+                    } else if (type.toLowerCase().contains("image")) {
+                        mUvVideoRl.setVisibility(View.INVISIBLE);
+                        displayImageView.setVisibility(View.VISIBLE);
+                        //displayImageView
+                        String photoPath = file.getAbsolutePath();
+//                    BitmapFactory.Options options = new BitmapFactory.Options();
+//                    options.inSampleSize = 8;
+//                    final Bitmap b = BitmapFactory.decodeFile(photoPath);// BitmapFactory.decodeFile(photoPath, options);
+//                    displayImageView.setImageBitmap(b);
+                        Glide.with(this).load(file).into(displayImageView);
+                        Log.d("ADVERTISEMENT", photoPath.toString() + "");
+                        interval = 5000;
+                    } else if (type.toLowerCase().contains("video")) {
+                        mUvVideoRl.setVisibility(View.VISIBLE);
+                        videoView.setVisibility(View.GONE);
+                        videoView.setVisibility(View.VISIBLE);
+                        displayImageView.setVisibility(View.INVISIBLE);
+                        File newfile = file;
+                        boolean isFileFound = newfile.exists();
+                        if (!isFileFound) {
+                            Log.d(" VIDEPATH", "isFileFound" + isFileFound);
+                            interval = -1; // 1 Second
+                        } else {
+                            Log.d("VIDEPATH", "isFileFound" + isFileFound);
+                            String photoPath = newfile.getAbsolutePath();
+                            interval = getMiliseconds(newfile);
+                            if (interval != 0) {
+                                Log.i("PostActivity", "Video List is " + getFilesDir().getPath());
+                                try {
+                                    videoView.setVideoURI(Uri.parse(photoPath));
+                                    videoView.start();
+                                    videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                                        @Override
+                                        public void onCompletion(MediaPlayer mp) {
+                                            Log.d("VIDEPATH", "onCompletion");
+                                        }
+                                    });
+                                    videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                                        @Override
+                                        public boolean onError(MediaPlayer mp, int what, int extra) {
+                                            Log.d("VIDEPATH", "onError");
+                                            videoView.stopPlayback();
+                                            if (currentAdvertisementNo < (completFileList.size() - 1)) {
+                                                currentAdvertisementNo++;
+                                            } else {
+                                                currentAdvertisementNo = 0;
+                                            }
+                                            showCurrentAd();
+                                            return false;
+                                        }
+                                    });
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+
+                            } else {
+                                interval = -1;
                             }
 
-                        } else {
-                            interval = -1;
                         }
-
+                        // 1 Second
                     }
-                    // 1 Second
                 }
-            }
-            if (interval != 0) {
-                Log.d("interval", "interval  :  " + interval + " " + file.getName());
-                Handler handler = new Handler() {
-                    @Override
-                    public void handleMessage(final Message msg) {
-                        final Bundle bundle = msg.getData();
+                if (interval != 0) {
+                    Log.d("interval", "interval  :  " + interval + " " + file.getName());
+                    Handler handler = new Handler() {
+                        @Override
+                        public void handleMessage(final Message msg) {
+                            final Bundle bundle = msg.getData();
+                            oldFilePath = new File(bundle.getString("FILE"));
 //                        String oldFilePath = bundle.getString("FILE");
 //                        Log.d("handleMessage", "currentFile  :  " + currentFile);
 //                        Log.d("handleMessage", "oldFilePath  :  " + oldFilePath);
@@ -336,58 +405,60 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 //                        }
 
 
-                        countDownTimer = new CountDownTimer(bundle.getLong("INTERVAL"), 1000) {
+                            countDownTimer = new CountDownTimer(bundle.getLong("INTERVAL"), 1000) {
 
-                            public void onTick(long millisUntilFinished) {
-                                if (isPause) {
-                                    countDownTimer.cancel();
-                                } else {
-                                    timeRemaining = millisUntilFinished - 1000;
+                                public void onTick(long millisUntilFinished) {
+                                    if (isPause) {
+                                        countDownTimer.cancel();
+                                    } else {
+                                        timeRemaining = millisUntilFinished - 1000;
+                                    }
+                                    Log.d("MILISECONDS", "REMAING: " + millisUntilFinished);
                                 }
-                                Log.d("MILISECONDS", "REMAING: " + millisUntilFinished);
-                            }
 
-                            public void onFinish() {
+                                public void onFinish() {
 
-                                oldFilePath = new File(bundle.getString("FILE"));
 
-                                Log.d("handleMessage", "currentFile  :  " + currentFile);
-                                Log.d("handleMessage", "oldFilePath  :  " + oldFilePath);
-                                if (oldFilePath == null || currentFile.getAbsolutePath().equalsIgnoreCase(oldFilePath.getAbsolutePath())) {
-                                    showCurrentAd();
+                                    Log.d("handleMessage", "currentFile  :  " + currentFile);
+                                    Log.d("handleMessage", "oldFilePath  :  " + oldFilePath);
+                                    if (oldFilePath == null || currentFile.getAbsolutePath().equalsIgnoreCase(oldFilePath.getAbsolutePath())) {
+                                        showCurrentAd();
+                                    }
                                 }
-                            }
 
-                        }.start();
+                            }.start();
 
-                    }
-                };
+                        }
+                    };
 
-                Message msg = new Message();
-                Bundle bundle = new Bundle();
-                bundle.putString("FILE", currentFile.getAbsolutePath());
-                bundle.putLong("INTERVAL", interval);
-                msg.setData(bundle);
+                    Message msg = new Message();
+                    Bundle bundle = new Bundle();
+                    bundle.putString("FILE", currentFile.getAbsolutePath());
+                    bundle.putLong("INTERVAL", interval);
+                    msg.setData(bundle);
 //                handler.sendMessageDelayed(msg, interval);
-                handler.sendMessage(msg);
-                if (currentAdvertisementNo < (completFileList.length - 1)) {
+                    handler.sendMessage(msg);
+                    if (currentAdvertisementNo < (completFileList.size() - 1)) {
+                        currentAdvertisementNo++;
+                    } else {
+                        currentAdvertisementNo = 0;
+                    }
+                }
+            } catch (RuntimeException e) {
+                if (currentAdvertisementNo < (completFileList.size() - 1)) {
                     currentAdvertisementNo++;
                 } else {
                     currentAdvertisementNo = 0;
                 }
-            }
-        } catch (RuntimeException e) {
-            if (currentAdvertisementNo < (completFileList.length - 1)) {
-                currentAdvertisementNo++;
-            } else {
-                currentAdvertisementNo = 0;
-            }
-            showCurrentAd();
-        } catch (Exception e) {
-            mUvVideoRl.setVisibility(View.INVISIBLE);
-            displayImageView.setVisibility(View.VISIBLE);
+                showCurrentAd();
+            } catch (Exception e) {
+                mUvVideoRl.setVisibility(View.INVISIBLE);
+                displayImageView.setVisibility(View.VISIBLE);
 
 
+            }
+        } else {
+            SHowMNT();
         }
     }
 
@@ -401,10 +472,10 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
         return (int) timeInMillisec;
     }
 
-    private void filterName(File file) {
-        completFileList = file.listFiles();
-        if (completFileList != null && completFileList.length > 0) {
-            for (File FronFile : completFileList) {
+    private void RemoveWhiteSpace(File file) {
+        File[] completFileLists = file.listFiles();
+        if (completFileLists != null && completFileLists.length > 0) {
+            for (File FronFile : completFileLists) {
                 if (FronFile.getAbsolutePath().contains(" ")) {
                     File from = new File(file, FronFile.getName());
                     File to = new File(file, FronFile.getName().replace(" ", "_"));
@@ -424,6 +495,24 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
         float heightInches = metrics.heightPixels / metrics.ydpi;
         double diagonalInches = Math.sqrt(Math.pow(widthInches, 2) + Math.pow(heightInches, 2));
         return diagonalInches >= 7.0;
+    }
+
+    private boolean isIMEIAvailable() {
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return true;
+        }
+        if (telephonyManager.getDeviceId() != null) {
+            return true;
+        }
+        return false;
     }
 
     private void showLog(String tag, String deviceName) {
@@ -497,42 +586,4 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
         this.registerReceiver(myReceiver, intentFilter);
     }
 
-    //        gestures_rl.setOnTouchListener(new OnSwipeTouchListener(this) {
-//            public void onSwipeON() {
-//                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "ON", Toast.LENGTH_SHORT).show();
-//                if (gestures_rl.isSelected()) {
-//                    findViewById(R.id.bckview).setBackgroundColor(Color.TRANSPARENT);
-//                } else {
-//                    findViewById(R.id.bckview).setBackgroundColor(Color.WHITE);
-//                }
-//                gestures_rl.setSelected(!gestures_rl.isSelected());
-//            }
-//
-//            public void onSwipeTop() {
-//                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "top", Toast.LENGTH_SHORT).show();
-//            }
-//
-//            public void onSwipeRight() {
-//                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "right", Toast.LENGTH_SHORT).show();
-//                if (currentAdvertisementNo > 0) {
-//                    currentAdvertisementNo = currentAdvertisementNo - 2;
-//                    if (currentAdvertisementNo == -1) {
-//                        currentAdvertisementNo = (completFileList.length - 1);
-//                    }
-//                } else {
-//                    currentAdvertisementNo = (completFileList.length - 1);
-//                }
-//                showCurrentAd();
-//            }
-//
-//            public void onSwipeLeft() {
-//                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "left", Toast.LENGTH_SHORT).show();
-//                showCurrentAd();
-//            }
-//
-//            public void onSwipeBottom() {
-//                Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "bottom", Toast.LENGTH_SHORT).show();
-//            }
-//
-//        });
 }

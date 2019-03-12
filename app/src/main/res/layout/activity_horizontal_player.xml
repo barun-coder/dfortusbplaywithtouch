@@ -8,25 +8,13 @@
     android:visibility="visible"
     tools:layout_editor_absoluteY="81dp">
 
-    <ImageView
-        android:id="@+id/default_iv"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:layout_margin="50dp"
-        android:background="@android:color/white"
-        android:rotation="180"
-        android:scaleType="centerInside"
-        android:src="@drawable/df_logo_m" />
-
 
     <RelativeLayout
         android:id="@+id/uv_video_rl"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/uvv_black"
-        android:visibility="visible">
+        android:visibility="invisible">
 
         <com.universalvideoview.UniversalVideoView
             android:id="@+id/videoView"
@@ -57,7 +45,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/white"
-        android:visibility="visible" />
+        android:visibility="invisible" />
+
+    <ImageView
+        android:id="@+id/default_iv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_margin="50dp"
+        android:background="@android:color/white"
+        android:rotation="270"
+        android:scaleType="centerInside"
+        android:src="@drawable/df_logo_m" />
 
     <com.displayfort.dfortusbtouch.widgets.SwippeableRelativeLayout
         android:id="@+id/gestures_rl"
