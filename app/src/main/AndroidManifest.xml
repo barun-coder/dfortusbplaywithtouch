@@ -33,7 +33,9 @@
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-                <!--<category android:name="android.intent.category.LEANBACK_LAUNCHER" />-->
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.HOME" />
+              <!--<category android:name="android.intent.category.LEANBACK_LAUNCHER" />-->
             </intent-filter>
         </activity>
 
@@ -54,13 +56,19 @@
         </receiver>
         <receiver
             android:name=".receiver.MediaMountReciever"
-            android:enabled="true">
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_MOUNTED" />
-                <category android:name="android.intent.category.DEFAULT" />
+                <action android:name="android.intent.action.MEDIA_UNMOUNTED" />
+
+                <data android:scheme="file" />
             </intent-filter>
         </receiver>
 
-        <service android:name=".receiver.StartService" />
+        <service
+            android:name=".receiver.RunAfterBootService"
+            android:enabled="true"
+            android:exported="true" />
     </application>
 </manifest>

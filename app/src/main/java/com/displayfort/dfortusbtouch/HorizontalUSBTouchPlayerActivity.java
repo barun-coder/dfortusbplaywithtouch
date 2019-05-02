@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.hardware.usb.UsbManager;
 import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -38,7 +39,6 @@ import com.universalvideoview.UniversalVideoView;
 import java.io.File;
 import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 
@@ -63,16 +63,54 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     private File currentFile, oldFilePath;
     private View bckview;
     private long timeRemaining;
-
+    private String Model = null;
+    private File selectedFile = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_horizontal_player);
+
         RegisterUpdateReceiver();
         init();
         setConstant();
+
+        /**/
+
         SHowMNT();
+//
+        /**/
+    }
+
+    private void CallFile(String stringPath) {
+        showLog("FILE", "PAth" + stringPath);
+        File file1 = new File(stringPath);
+        File[] fileList = file1.listFiles();
+        CallFileList(file1, fileList);
+    }
+
+    private void CallFileList(File file1, File[] fileList) {
+        if (fileList != null && fileList.length > 0) {
+            for (int i = 0; i < fileList.length; i++) {
+                try {
+//                    showLog("FILE", fileList[i].getAbsolutePath());
+                    File file = fileList[i];
+                    if ((file.getAbsolutePath().contains("salsain"))) {
+                        selectedFile = file1;
+                        showLog("FILE", "-------------" + selectedFile.getAbsolutePath());
+                    }
+                    if (file.getAbsolutePath().contains("udisk")) {
+                        CallFileList(file, file.listFiles());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void setConstant() {
@@ -83,6 +121,8 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     }
 
     private void init() {
+
+        textview = findViewById(R.id.textview);
         gestures_rl = findViewById(R.id.gestures_rl);
         gestures_rl.setSelected(false);
         bckview = findViewById(R.id.view);
@@ -100,7 +140,9 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
             @Override
             public boolean onSwipeRight() {
                 if (!gestures_rl.isSelected()) {
-                    countDownTimer.cancel();
+                    if (countDownTimer != null) {
+                        countDownTimer.cancel();
+                    }
                     //   Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "right", Toast.LENGTH_SHORT).show();
                     if (currentAdvertisementNo == 0) {
                         currentAdvertisementNo = (completFileList.size() - 2);
@@ -120,7 +162,9 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
             @Override
             public boolean onSwipeLeft() {
                 if (!gestures_rl.isSelected()) {
-                    countDownTimer.cancel();
+                    if (countDownTimer != null) {
+                        countDownTimer.cancel();
+                    }
                     //  Toast.makeText(HorizontalUSBTouchPlayerActivity.this, "left", Toast.LENGTH_SHORT).show();
                     showCurrentAd();
                 }
@@ -154,7 +198,7 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 
                             Log.d("handleMessage", "currentFile  :  " + currentFile);
                             Log.d("handleMessage", "oldFilePath  :  " + oldFilePath);
-                            if (currentFile.getAbsolutePath().equalsIgnoreCase(oldFilePath.getAbsolutePath())) {
+                            if (currentFile != null && oldFilePath != null && currentFile.getAbsolutePath().equalsIgnoreCase(oldFilePath.getAbsolutePath())) {
                                 showCurrentAd();
                             }
                         }
@@ -199,70 +243,76 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
 
     ///data/user/0/displayfort.nirmit.com.myapplication/files
     private void SHowMNT() {
+        selectedFile = null;
+        CallFile("/storage");
         mDefaultIV.setVisibility(View.VISIBLE);
         mUvVideoRl.setVisibility(View.INVISIBLE);
         displayImageView.setVisibility(View.INVISIBLE);
-        showLog("FILEPATH", "\n\n");
-        File[] fileList;
-        File file = new File("mnt");
-        if (file.exists()) {
-            showLog("FILEPATH-MNT", "mnt exist");
-            fileList = file.listFiles();
-            for (int i = 0; i < fileList.length; i++) {
-                showLog("FILEPATH-MNT", i + ":-" + fileList[i].getAbsolutePath());
-            }
-            showLog("FILEPATH", "MNT over \n");
-            File file1 = new File(getApplicationContext().getFilesDir().getPath());
-            if (!isNotMobile() && isIMEIAvailable()) {
-                if (Orientation == ExifInterface.ORIENTATION_UNDEFINED) {
-                    file1 = new File(Environment.getExternalStorageDirectory() + File.separator + "adsTouch");
-                } else {
-                    file1 = new File(getApplicationContext().getFilesDir().getPath().replace("files", "img"));
+        if (selectedFile != null) {
+            startFIlePlay(selectedFile);
+            return;
+        } else {
+            showLog("FILEPATH", "\n\n");
+            File[] fileList;
+            File file = new File("mnt");
+            if (file.exists()) {
+                showLog("FILEPATH-MNT", "mnt exist");
+                fileList = file.listFiles();
+                for (int i = 0; i < fileList.length; i++) {
+                    showLog("FILEPATH-MNT", i + ":-" + fileList[i].getAbsolutePath());
                 }
-                if (file1.exists()) {
-                    showLog("FILEPATH-MNT", file1 + " mnt/usb exist");
-                    startFIlePlay(file1);
-                }
-            } else {
-                file1 = new File(file.getAbsoluteFile() + File.separator + "usb");
-                fileList = file1.listFiles();
-                if (fileList != null && fileList.length > 0) {
-                    for (int i = 0; i < fileList.length; i++) {
-                        showLog("FILEPATH-MNT", i + ":--" + fileList[i].getAbsolutePath());
-                        if (fileList[i].exists()) {
-                            startFIlePlay(fileList[i]);
-                            return;
-                        }
+                showLog("FILEPATH", "MNT over \n");
+                File file1 = new File(getApplicationContext().getFilesDir().getPath());
+                if (!isNotMobile() && isIMEIAvailable()) {
+                    if (Orientation == ExifInterface.ORIENTATION_UNDEFINED) {
+                        file1 = new File(Environment.getExternalStorageDirectory() + File.separator + "adsTouch");
+                    } else {
+                        file1 = new File(getApplicationContext().getFilesDir().getPath().replace("files", "img"));
                     }
-
+                    if (file1.exists()) {
+                        showLog("FILEPATH-MNT", file1 + " mnt/usb exist");
+                        startFIlePlay(file1);
+                    }
                 } else {
-                    file1 = new File("storage");
+                    file1 = new File(file.getAbsoluteFile() + File.separator + "usb");
                     fileList = file1.listFiles();
                     if (fileList != null && fileList.length > 0) {
                         for (int i = 0; i < fileList.length; i++) {
-                            if (!fileList[i].getAbsolutePath().contains("emulated") && !fileList[i].getAbsolutePath().contains("self")) {
-                                if (fileList[i].exists()) {
-                                    startFIlePlay(fileList[i]);
-                                    return;
-                                }
+                            showLog("FILEPATH-MNT", i + ":--" + fileList[i].getAbsolutePath());
+                            if (fileList[i].exists()) {
+                                startFIlePlay(fileList[i]);
+                                return;
                             }
                         }
+
                     } else {
-                        file1 = new File(file.getAbsoluteFile() + File.separator + "sdcard");
+                        file1 = new File("storage");
                         fileList = file1.listFiles();
                         if (fileList != null && fileList.length > 0) {
+                            for (int i = 0; i < fileList.length; i++) {
+                                if (!fileList[i].getAbsolutePath().contains("emulated") && !fileList[i].getAbsolutePath().contains("self")) {
+                                    if (fileList[i].exists()) {
+                                        startFIlePlay(fileList[i]);
+                                        return;
+                                    }
+                                }
+                            }
+                        } else {
+                            file1 = new File(file.getAbsoluteFile() + File.separator + "sdcard");
+                            fileList = file1.listFiles();
+                            if (fileList != null && fileList.length > 0) {
 //                            for (int i = 0; i < fileList.length; i++) {
-                            startFIlePlay(file1);
-                            return;
-                            //                            }
+                                startFIlePlay(file1);
+                                return;
 
+                            }
                         }
                     }
                 }
             }
-
         }
     }
+
 
     ///storage/emulated/0/ads
     private void startFIlePlay(final File file) {
@@ -287,10 +337,12 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
     private ArrayList<File> FilterFiles(File[] completFileList) {
         ArrayList<File> newFileList = new ArrayList<>();
         int j = 0;
-        for (int i = 0; i < completFileList.length; i++) {
-            String type = URLConnection.guessContentTypeFromName(completFileList[i].getName());
-            if (type != null && (type.toLowerCase().contains("gif") || type.toLowerCase().contains("image") || type.toLowerCase().contains("video"))) {
-                newFileList.add(completFileList[i]);
+        if (completFileList != null) {
+            for (int i = 0; i < completFileList.length; i++) {
+                String type = URLConnection.guessContentTypeFromName(completFileList[i].getName());
+                if (type != null && (type.toLowerCase().contains("gif") || type.toLowerCase().contains("image") || type.toLowerCase().contains("video"))) {
+                    newFileList.add(completFileList[i]);
+                }
             }
         }
         return newFileList;
@@ -330,13 +382,9 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
                     } else if (type.toLowerCase().contains("image")) {
                         mUvVideoRl.setVisibility(View.INVISIBLE);
                         displayImageView.setVisibility(View.VISIBLE);
-                        //displayImageView
                         String photoPath = file.getAbsolutePath();
-//                    BitmapFactory.Options options = new BitmapFactory.Options();
-//                    options.inSampleSize = 8;
-//                    final Bitmap b = BitmapFactory.decodeFile(photoPath);// BitmapFactory.decodeFile(photoPath, options);
-//                    displayImageView.setImageBitmap(b);
                         Glide.with(this).load(file).into(displayImageView);
+                        System.gc();
                         Log.d("ADVERTISEMENT", photoPath.toString() + "");
                         interval = 5000;
                     } else if (type.toLowerCase().contains("video")) {
@@ -515,9 +563,6 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
         return false;
     }
 
-    private void showLog(String tag, String deviceName) {
-        Log.d(TAG, tag + ":" + deviceName);
-    }
 
     @Override
     public void onPause() {
@@ -572,16 +617,27 @@ public class HorizontalUSBTouchPlayerActivity extends BaseSupportActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals("android.intent.action.MEDIA_MOUNTED")) {
-                SHowMNT();
+            showLog("", "onReceive");
+            SHowMNT();
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                showLog("", "attached");
+
+
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                showLog("", "deattached");
             }
+
         }
+
     }
 
     private void RegisterUpdateReceiver() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("android.intent.action.MEDIA_MOUNTED");
+        intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         intentFilter.addDataScheme("file");
+        intentFilter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
         myReceiver = new MyReceiver();
         this.registerReceiver(myReceiver, intentFilter);
     }
